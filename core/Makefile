@@ -971,14 +971,45 @@ endif
 
 .PHONY: bootloader
 ifneq ($(strip $(TARGET_BOOTLOADER_CONFIG)),)
-BOOTLOADER_CROSS_TOOLCHAIN := `pwd`/prebuilts/gcc/linux-x86/arm/arm-linux-androideabi-4.9/bin/arm-linux-androideabi-
+BOOTLOADER_CROSS_TOOLCHAIN := `pwd`/prebuilts/gcc/linux-x86/arm/arm-eabi-4.8/bin/arm-eabi-
 BOOTLOADER_ENV := ARCH=arm CROSS_COMPILE=$(BOOTLOADER_CROSS_TOOLCHAIN)
 HOST_PROCESSOR := $(shell cat /proc/cpuinfo | grep processor | wc -l)
-TARGET_BOOTLOADER_IMAGE := $(PRODUCT_OUT)/u-boot.imx
 
 BOOTLOADER_PATH := bootable/bootloader/uboot-imx/
 BOOTLOADER_CONFIG_FILE := $(BOOTLOADER_PATH)/include/config.h
 
+ifneq ("$(wildcard $(BOOTLOADER_PATH)/SPL)","")
+TARGET_BOOTLOADER_IMAGE := $(PRODUCT_OUT)/u-boot.img
+TARGET_BOOTLOADER_SPL := $(PRODUCT_OUT)/SPL
+else
+TARGET_BOOTLOADER_IMAGE := $(PRODUCT_OUT)/u-boot.imx
+endif
+
+ifneq ("$(wildcard $(BOOTLOADER_PATH)/SPL)","")
+bootloader: $(TARGET_BOOTLOADER_IMAGE) $(TARGET_BOOTLOADER_SPL)
+$(TARGET_BOOTLOADER_IMAGE):
+	for ubootplat in $(TARGET_BOOTLOADER_CONFIG); do \
+		UBOOT_PLATFORM=`echo $$ubootplat | cut -d':' -f1`; \
+		UBOOT_CONFIG=`echo $$ubootplat | cut -d':' -f2`; \
+        echo $(UBOOT_PLATFORM); \
+        echo $(UBOOT_CONFIG); \
+		$(MAKE) -C bootable/bootloader/uboot-imx/ distclean $(BOOTLOADER_ENV); \
+		$(MAKE) -C bootable/bootloader/uboot-imx/ $$UBOOT_CONFIG $(BOOTLOADER_ENV); \
+		$(MAKE) -C bootable/bootloader/uboot-imx/ $(BOOTLOADER_ENV); \
+		install -D bootable/bootloader/uboot-imx/u-boot.img $(PRODUCT_OUT)/u-boot-$$UBOOT_PLATFORM.img; \
+		install -D bootable/bootloader/uboot-imx/u-boot.img $@; \
+	done
+
+$(TARGET_BOOTLOADER_SPL):
+	for ubootplat in $(TARGET_BOOTLOADER_CONFIG); do \
+		UBOOT_PLATFORM=`echo $$ubootplat | cut -d':' -f1`; \
+		UBOOT_CONFIG=`echo $$ubootplat | cut -d':' -f2`; \
+		echo $(UBOOT_PLATFORM); \
+		echo $(UBOOT_CONFIG); \
+		install -D bootable/bootloader/uboot-imx/SPL $(PRODUCT_OUT)SPL-$$UBOOT_PLATFORM; \
+		install -D bootable/bootloader/uboot-imx/SPL $@; \
+	done
+else
 bootloader: $(TARGET_BOOTLOADER_IMAGE)
 .PHONY: $(TARGET_BOOTLOADER_IMAGE)
 $(TARGET_BOOTLOADER_IMAGE):
@@ -993,15 +1024,15 @@ $(TARGET_BOOTLOADER_IMAGE):
 		install -D bootable/bootloader/uboot-imx/u-boot.imx $(PRODUCT_OUT)/u-boot-$$UBOOT_PLATFORM.imx; \
 		install -D bootable/bootloader/uboot-imx/u-boot.imx $@; \
 	done
+endif
 else
 bootloader:
 endif
 
 .PHONY: kernelimage
 ifneq ($(strip $(TARGET_NO_KERNEL)),true)
-KERNEL_CROSS_TOOLCHAIN := `pwd`/prebuilts/gcc/linux-x86/arm/arm-linux-androideabi-4.9/bin/arm-linux-androideabi-
-KERNEL_CFLAGS := KCFLAGS=-mno-android
-KERNEL_ENV := ARCH=arm CROSS_COMPILE=$(KERNEL_CROSS_TOOLCHAIN) LOADADDR=$(LOAD_KERNEL_ENTRY) $(KERNEL_CFLAGS)
+KERNEL_CROSS_TOOLCHAIN := `pwd`/prebuilts/gcc/linux-x86/arm/arm-eabi-4.8/bin/arm-eabi-
+KERNEL_ENV := ARCH=arm CROSS_COMPILE=$(KERNEL_CROSS_TOOLCHAIN) LOADADDR=$(LOAD_KERNEL_ENTRY)
 HOST_PROCESSOR := $(shell cat /proc/cpuinfo | grep processor | wc -l)
 INSTALLED_KERNEL_TARGET := $(PRODUCT_OUT)/kernel
 TARGET_PREBUILT_KERNEL := $(PRODUCT_OUT)/kernel
@@ -1196,6 +1227,7 @@ $(INSTALLED_SYSTEMIMAGE): $(BUILT_SYSTEMIMAGE) $(RECOVERY_FROM_BOOT_PATCH) | $(A
 	@echo "Install system fs image: $@"
 	$(copy-file-to-target)
 	$(hide) $(call assert-max-image-size,$@ $(RECOVERY_FROM_BOOT_PATCH),$(BOARD_SYSTEMIMAGE_PARTITION_SIZE))
+	simg2img $(PRODUCT_OUT)/system.img $(PRODUCT_OUT)/system_raw.img;
 
 systemimage: $(INSTALLED_SYSTEMIMAGE)
 
