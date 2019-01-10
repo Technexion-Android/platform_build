@@ -1357,7 +1357,7 @@ endif
 .PHONY: bootloader
 ifneq ($(strip $(TARGET_BOOTLOADER_CONFIG)),)
 ifeq ($(TARGET_ARCH),arm64)
-BOOTLOADER_CROSS_TOOLCHAIN := `pwd`/prebuilts/gcc/linux-x86/aarch64/aarch64-linux-android-4.9/bin/aarch64-linux-android-
+BOOTLOADER_CROSS_TOOLCHAIN := `pwd`/prebuilts/gcc/linux-x86/aarch64/aarch64-linux-gnu/bin/aarch64-linux-gnu-
 else
 BOOTLOADER_CROSS_TOOLCHAIN := `pwd`/prebuilts/gcc/linux-x86/arm/arm-linux-androideabi-4.9/bin/arm-linux-androideabi-
 endif
