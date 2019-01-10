@@ -1398,7 +1398,8 @@ endif
 $(TARGET_PREBUILT_KERNEL): $(TARGET_KERNEL_CONFIGURE) | $(KERNEL_OUT)
 	$(MAKE) -C $(KERNEL_IMX_PATH)/kernel_imx mrproper
 	$(MAKE) -C $(KERNEL_IMX_PATH)/kernel_imx O=$(realpath $(KERNEL_OUT)) -j$(HOST_PROCESSOR) $(KERNEL_ENV)
-	$(MAKE) -C $(KERNEL_IMX_PATH)/kernel_imx O=$(realpath $(KERNEL_OUT)) dtbs $(KERNEL_ENV)
+	$(MAKE) -C $(KERNEL_IMX_PATH)/kernel_imx O=$(realpath $(KERNEL_OUT)) -j$(HOST_PROCESSOR) dtbs $(KERNEL_ENV)
+	$(MAKE) -C $(KERNEL_IMX_PATH)/kernel_imx O=$(realpath $(KERNEL_OUT)) -j$(HOST_PROCESSOR) modules_install INSTALL_MOD_PATH=$(realpath $(KERNEL_OUT)) $(KERNEL_ENV)
 	install -D $(KERNEL_IMAGE_NAME)  $(KERNEL_OUT)/kernel_img
 	for dtsplat in $(TARGET_BOARD_DTS_CONFIG); do \
 		DTS_PLATFORM=`echo $$dtsplat | cut -d':' -f1`; \
@@ -1568,6 +1569,8 @@ $(INSTALLED_SYSTEMIMAGE): $(BUILT_SYSTEMIMAGE) $(RECOVERY_FROM_BOOT_PATCH)
 	@echo "Install system fs image: $@"
 	$(copy-file-to-target)
 	$(hide) $(call assert-max-image-size,$@ $(RECOVERY_FROM_BOOT_PATCH),$(BOARD_SYSTEMIMAGE_PARTITION_SIZE))
+	simg2img $(PRODUCT_OUT)/system.img $(PRODUCT_OUT)/system_raw.img;
+	simg2img $(PRODUCT_OUT)/vendor.img $(PRODUCT_OUT)/vendor_raw.img;
 
 systemimage: $(INSTALLED_SYSTEMIMAGE)
 
