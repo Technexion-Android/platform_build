@@ -863,7 +863,7 @@ $$(my_link_type_file): $$(my_link_type_deps)
 	$$(hide) mkdir -p $$(dir $$@) && rm -f $$@
 ifeq ($($(1).MISSING),true)
 	$$(hide) $(CHECK_LINK_TYPE) --makefile $($(1).MAKEFILE) --module $(link-type-name) \
-	  --type "$($(1).TYPE)" $(addprefix --allowed ,$($(1).ALLOWED)) \
+	  --type "$($(1).TYPE)" $(addprefix --allowed ,$($(1).ALLOWED) native:platform) \
 	  $(addprefix --warn ,$($(1).WARN)) $$(PRIVATE_DEPS)
 endif
 	$$(hide) echo "$($(1).TYPE)" >$$@
